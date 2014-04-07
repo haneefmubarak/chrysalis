@@ -1,4 +1,5 @@
-#include "chrysalis.h"
+#include "parse.h"
+#include "cli.h"
 
 // name:		{chrysalis, cpe, a.out}
 // auth:		{root, user, local, null}
@@ -8,6 +9,13 @@
 // [longflags]...:	{}
 // ["--"		{args}*]
 
+static inline enum cli_name parse_name (char *name);
+static inline enum cli_auth parse_auth (char *auth);
+static inline struct cli_sflags parse_sflags (char *sflags);
+static inline enum cli_action parse_action (char *action);
+static inline struct cli_subaction parse_subaction (char *subaction);
+static inline size_t parse_lflags (size_t x, char **argv, struct cli_lflags *lflags);
+
 struct cli parse_cli (int argc, char **argv) {
 	size_t x = 0;
 
@@ -15,17 +23,17 @@ struct cli parse_cli (int argc, char **argv) {
 
 	// check for minimum argc
 	if (argc < 4) {
-		invocation (argc, argv);
-		cli.status = invalid;
+		cli_invocation (argc, argv);
+		cli.status = status_invalid;
 		return cli;
 	}
 
 	cli.name = parse_name (argv[x++]);
 	cli.auth = parse_auth (argv[x++]);
 	// validate name and auth
-	if ((cli.name == invalid) || (cli.auth == invalid)) {
-		invocation (argc, argv);
-		cli.status = invalid;
+	if ((cli.name == name_invalid) || (cli.auth == auth_invalid)) {
+		cli_invocation (argc, argv);
+		cli.status = status_invalid;
 		return cli;
 	}
 
@@ -35,19 +43,19 @@ struct cli parse_cli (int argc, char **argv) {
 
 		// validate shortflags
 		if (!cli.sflags.sane) {
-			invocation (argc, argv);
-			cli.status = invalid;
+			cli_invocation (argc, argv);
+			cli.status = status_invalid;
 			return cli;
 		}
 	} else {
-		cli.sflags = { 0 };
+		cli.sflags = (struct cli_sflags) { 0 };
 	}
 
 	cli.action = parse_action (argv[x++]);
 	// validate action
-	if (cli.action == invalid) {
-		invocation (argc, argv);
-		cli.status = invalid;
+	if (cli.action == action_invalid) {
+		cli_invocation (argc, argv);
+		cli.status = status_invalid;
 		return cli;
 	}
 
@@ -56,25 +64,25 @@ struct cli parse_cli (int argc, char **argv) {
 		cli.subaction = parse_subaction (argv[x++]);
 
 		// validate subaction
-		if (cli.subaction == invalid) {
-			invocation (argc, argv);
-			cli.status = invalid;
+		if (!cli.subaction.sane) {
+			cli_invocation (argc, argv);
+			cli.status = status_invalid;
 			return cli;
 		}
 	} else {
-		cli.subaction = none;
+		cli.subaction = (struct cli_subaction) { 0 };
 	}
 
 	// parse longflags
-	cli.lflags = { 0 };
+	cli.lflags = (struct cli_lflags) { 0 };
 	// check for null terminator
 	while ((x < argc) && (argv[x][2] != 0x00)) {
 		// check for first two chars
 		if ((argv[x][0] != '-') || (argv[x][1] != '-')) {
-			invocation (argc, argv);
-			cli.status = invalid;
+			cli_invocation (argc, argv);
+			cli.status = status_invalid;
 			return cli;
-		)
+		}
 
 		// a longflag may take arguments, so
 		// we must adjust accordingly
@@ -84,14 +92,14 @@ struct cli parse_cli (int argc, char **argv) {
 		// stack takes time
 		x = parse_lflags (x, argv, &(cli.lflags));
 		if (!cli.lflags.sane) {
-			invocation (argc, argv);
-			cli.status = invalid;
+			cli_invocation (argc, argv);
+			cli.status = status_invalid;
 			return cli;
 		}
 	}
 
 	// if arg is "--" read extra args in
-	if ((x < argc) && (strcmp (argv[x++], "--") {
+	if ((x < argc) && (strcmp (argv[x++], "--"))) {
 		// enough space for remaining arguments
 		cli.argc = argc - x;
 		cli.arg = malloc (cli.argc * sizeof (char *));
@@ -116,27 +124,27 @@ static inline enum cli_name parse_name (char *name) {
 	switch ((basename (name))[1]) {
 		case 'h':	// chrysalis
 			if (strcmp (name, "chrysalis"))
-				label = invalid;
+				label = name_invalid;
 
-			label = chrysalis;
+			label = name_chrysalis;
 			break;
 
-		case 'p'	// cpe
+		case 'p':	// cpe
 			if (strcmp (name, "cpe"))
-				label = invalid;
+				label = name_invalid;
 
-			label = cpe;
+			label = name_cpe;
 			break;
 
-		case '.'	// a.out
+		case '.':	// a.out
 			if (strcmp (name, "a.out"))
-				label = invalid;
+				label = name_invalid;
 
-			label = aout;
+			label = name_aout;
 			break;
 
 		default:
-			label = invalid;
+			label = name_invalid;
 			break;
 	}
 
@@ -144,40 +152,40 @@ static inline enum cli_name parse_name (char *name) {
 }
 
 static inline enum cli_auth parse_auth (char *auth) {
-	enum auth level;
+	enum cli_auth level;
 
 	// take advantage of valid authlevel list
 	switch (auth[0]) {
 		case 'r':
 			if (strcmp (auth, "root"))
-				level = invalid;
+				level = auth_invalid;
 
-			level = root;
+			level = auth_root;
 			break;
 
 		case 'u':
 			if (strcmp (auth, "user"))
-				level = invalid;
+				level = auth_invalid;
 
-			level = user;
+			level = auth_user;
 			break;
 
 		case 'l':
 			if (strcmp (auth, "local"))
-				level = invalid;
+				level = auth_invalid;
 
-			level = local;
+			level = auth_local;
 			break;
 
 		case 'n':
 			if (strcmp (auth, "null"))
-				level = invalid;
+				level = auth_invalid;
 
-			level = null;
+			level = auth_null;
 			break;
 
 		default:
-			level = invalid;
+			level = auth_invalid;
 			break;
 		}
 

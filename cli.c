@@ -1,6 +1,6 @@
-#include "chrysalis.h"
+#include "cli.h"
 
-void invocation (int argc, char **argv) {
+void cli_invocation (int argc, char **argv) {
 	size_t x;
 
 	fputs ("Chrysalis: invalid invocation:\n\n\t", stderr);
