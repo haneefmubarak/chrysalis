@@ -26,16 +26,11 @@ enum cli_action {
 };
 
 struct cli_subaction {
-	unsigned sane:		1;
+	unsigned insane:	1;
 };
 
-struct cli_sflags {
-	unsigned sane:		1;
-	unsigned v:		1;
-};
-
-struct cli_lflags {
-	unsigned sane:		1;
+struct cli_flags {
+	unsigned insane:	1;
 	unsigned version:	1;
 };
 
@@ -45,8 +40,7 @@ struct cli {
 	enum cli_auth		auth;
 	enum cli_action		action;
 	struct cli_subaction	subaction;
-	struct cli_sflags	sflags;
-	struct cli_lflags	lflags;
+	struct cli_flags	flags;
 	unsigned		argc;
 	char			**arg;
 };

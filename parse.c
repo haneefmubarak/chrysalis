@@ -11,10 +11,10 @@
 
 static inline enum cli_name parse_name (char *name);
 static inline enum cli_auth parse_auth (char *auth);
-static inline struct cli_sflags parse_sflags (char *sflags);
+static inline struct cli_flags parse_sflags (char *sflags);
 static inline enum cli_action parse_action (char *action);
-static inline struct cli_subaction parse_subaction (char *subaction);
-static inline size_t parse_lflags (size_t x, char **argv, struct cli_lflags *lflags);
+static inline struct cli_subaction parse_subaction (char *subaction, enum cli_action action);
+static inline size_t parse_lflags (size_t x, char **argv, struct cli_flags *flags);
 
 struct cli parse_cli (int argc, char **argv) {
 	size_t x = 0;
@@ -39,16 +39,17 @@ struct cli parse_cli (int argc, char **argv) {
 
 	// check for shortflags
 	if (argv[2][0] == '-') {
-		cli.sflags = parse_sflags (argv[x++]);
+		// detect flags
+		cli.flags = parse_sflags (argv[x++]);
 
 		// validate shortflags
-		if (!cli.sflags.sane) {
+		if (cli.flags.insane) {
 			cli_invocation (argc, argv);
 			cli.status = status_invalid;
 			return cli;
 		}
 	} else {
-		cli.sflags = (struct cli_sflags) { 0 };
+		cli.flags = (struct cli_flags) { 0 };
 	}
 
 	cli.action = parse_action (argv[x++]);
@@ -61,10 +62,10 @@ struct cli parse_cli (int argc, char **argv) {
 
 	// check for a subaction
 	if (argv[x][0] != '-') {
-		cli.subaction = parse_subaction (argv[x++]);
+		cli.subaction = parse_subaction (argv[x++], cli.action);
 
 		// validate subaction
-		if (!cli.subaction.sane) {
+		if (cli.subaction.insane) {
 			cli_invocation (argc, argv);
 			cli.status = status_invalid;
 			return cli;
@@ -74,7 +75,6 @@ struct cli parse_cli (int argc, char **argv) {
 	}
 
 	// parse longflags
-	cli.lflags = (struct cli_lflags) { 0 };
 	// check for null terminator
 	while ((x < argc) && (argv[x][2] != 0x00)) {
 		// check for first two chars
@@ -90,8 +90,8 @@ struct cli parse_cli (int argc, char **argv) {
 		// also, we need to do this for each
 		// flag, and pushing a struct to the
 		// stack takes time
-		x = parse_lflags (x, argv, &(cli.lflags));
-		if (!cli.lflags.sane) {
+		x = parse_lflags (x, argv, &(cli.flags));
+		if (cli.flags.insane) {
 			cli_invocation (argc, argv);
 			cli.status = status_invalid;
 			return cli;
@@ -190,4 +190,83 @@ static inline enum cli_auth parse_auth (char *auth) {
 		}
 
 		return level;
+}
+
+static inline struct cli_flags parse_sflags (char *sflags) {
+	struct cli_flags flags = { 0 };
+	size_t x;
+
+	// ignore the '-' prefix
+	for (x = 1; sflags[x] != 0x00; x++) {
+		// take advantage of single byte flags
+		switch (sflags[x]) {
+			case 'v':
+				flags.version = 1;
+				break;
+
+			default:
+				flags.insane = 1;
+				break;
+		}
+	}
+
+	return flags;
+}
+
+static inline enum cli_action parse_action (char *action) {
+	enum cli_action command;
+
+	// take advantage of valid action list
+	switch (action[0]) {
+		case 's':
+			if (strcmp (action, "status"))
+				command = action_invalid;
+
+			command = action_status;
+			break;
+
+		case 'u':
+			if (strcmp (action, "update"))
+				command = action_invalid;
+
+			command = action_update;
+
+		default:
+			command = action_invalid;
+			break;
+		}
+
+		return command;
+}
+
+static inline struct cli_subaction parse_subaction (char *subaction, enum cli_action action) {
+	struct cli_subaction subcommand = { 0 };
+
+	// take advantage of known subaction list
+	switch (subaction[0]) {
+		default:
+			subcommand.insane = 1;
+			break;
+	}
+
+	return subcommand;
+}
+
+static inline size_t parse_lflags (size_t x, char **argv, struct cli_flags *flags) {
+	// take advantage of known longflags
+	switch (argv[x][2]) {
+		case 'v':
+			if (strcmp (argv[x], "--version"))
+				flags->insane = 1;
+
+			flags->version = 1;
+			break;
+
+		default:
+			flags->insane = 1;
+			break;
+	}
+
+	// increment iterator for next round
+	return x+1;
 }
