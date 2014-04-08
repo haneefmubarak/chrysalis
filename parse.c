@@ -22,7 +22,7 @@ struct cli parse_cli (int argc, char **argv) {
 	struct cli cli;
 
 	// check for minimum argc
-	if (argc < 4) {
+	if (argc < 3) {
 		cli_invocation (argc, argv);
 		cli.status = status_invalid;
 		return cli;
@@ -60,8 +60,8 @@ struct cli parse_cli (int argc, char **argv) {
 		return cli;
 	}
 
-	// check for a subaction
-	if (argv[x][0] != '-') {
+	// check for a subaction (and sufficient args)
+	if ((x < argc) && (argv[x][0] != '-')) {
 		cli.subaction = parse_subaction (argv[x++], cli.action);
 
 		// validate subaction
