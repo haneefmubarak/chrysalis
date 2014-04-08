@@ -17,9 +17,9 @@ static inline struct cli_subaction parse_subaction (char *subaction, enum cli_ac
 static inline size_t parse_lflags (size_t x, char **argv, struct cli_flags *flags);
 
 struct cli parse_cli (int argc, char **argv) {
-	size_t x = 0;
+	int x = 0;
 
-	struct cli cli;
+	struct cli cli = { 0 };
 
 	// check for minimum argc
 	if (argc < 3) {
