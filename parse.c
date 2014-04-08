@@ -270,3 +270,14 @@ static inline size_t parse_lflags (size_t x, char **argv, struct cli_flags *flag
 	// increment iterator for next round
 	return x+1;
 }
+
+void cleanup_parse (void *p) {
+	struct cli *cli = p;
+	int x;
+
+	for (x = 0; x < cli->argc; x++) {
+		free (cli->arg[x]);
+	}
+
+	free (cli->arg);
+}

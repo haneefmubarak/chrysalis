@@ -4,6 +4,8 @@
 
 #include "chrysalis.h"
 
+#define autofree_cli __attribute__((cleanup(cleanup_parse)))
+
 enum cli_name {
 	name_invalid,
 	name_chrysalis,
@@ -46,3 +48,4 @@ struct cli {
 };
 
 struct cli 	parse_cli 		(int argc, char **argv);
+void		cleanup_parse		(void *p);
